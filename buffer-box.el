@@ -89,13 +89,16 @@
     `(choice  ,@choices)))
 
 (defface buffer-box-face-active
-  `((t ( :foreground ,(face-foreground 'default nil 'default)
+  `((t ( :family     ,(face-attribute 'default :family)
+         :foreground ,(face-foreground 'default nil 'default)
          :background ,(face-background 'default nil 'default)
+         
          :inherit default)))
   "Face for active buffer.")
 
 (defface buffer-box-face-inactive
-  `((t ( :foreground ,(face-foreground 'font-lock-comment-face nil 'default)
+  `((t ( :family     ,(face-attribute 'default :family)
+         :foreground ,(face-foreground 'font-lock-comment-face nil 'default)
          :background ,(face-background 'font-lock-comment-face nil 'default)
          :inherit default)))
   "Face for inactive buffers.")
