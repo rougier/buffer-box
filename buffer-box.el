@@ -28,8 +28,8 @@
 ;; on all sides.  This works on both graphic or terminal modes and takes
 ;; advantage of margins, header-line, tab-line, mode-line, line-prefix
 ;; and wrap-prefix.
-;;
-;;; Limitations
+
+;;;; Limitations
 
 ;;  If you display the same buffer in two different windows, the side
 ;;  borders will be either active or inactive in both windows (while
@@ -44,7 +44,7 @@
 ;;  a dynamic line-prefix / wrap-prefix inside your displayed text
 ;;  with the proper active/inactive glyph.
 
-;;; Example usage
+;;;; Example usage
 
 ;; Immediate border toggling (using default header)
 ;; (buffer-box)
@@ -52,7 +52,6 @@
 ;; Bound a key to toggle it
 ;; (bind-key "C-c b" #'buffer-box)
 ;; (bind-key "C-=" #'buffer-box)
-
 
 ;;; Code:
 
@@ -77,38 +76,33 @@
 
 (defcustom buffer-box-style-active 'default
   "Styles for active buffer."
-  :group 'buffer-box
   :type
-    (let ((choices (mapcar (lambda (s) `(const ,s))
+  (let ((choices (mapcar (lambda (s) `(const ,s))
                          (mapcar #'car buffer-box--border-styles))))
-      `(choice  ,@choices)))
+    `(choice  ,@choices)))
 
 (defcustom buffer-box-style-inactive 'default
   "Styles for inactive buffers."
-  :group 'buffer-box
   :type
-    (let ((choices (mapcar (lambda (s) `(const ,s))
+  (let ((choices (mapcar (lambda (s) `(const ,s))
                          (mapcar #'car buffer-box--border-styles))))
-      `(choice  ,@choices)))
+    `(choice  ,@choices)))
 
 (defface buffer-box-face-active
   `((t ( :foreground ,(face-foreground 'default nil 'default)
          :background ,(face-background 'default nil 'default)
          :inherit default)))
-  "Face for active buffer."
-  :group 'buffer-box)
+  "Face for active buffer.")
 
 (defface buffer-box-face-inactive
   `((t ( :foreground ,(face-foreground 'font-lock-comment-face nil 'default)
          :background ,(face-background 'font-lock-comment-face nil 'default)
          :inherit default)))
-  "Face for inactive buffers."
-  :group 'buffer-box)
+  "Face for inactive buffers.")
 
 (defun buffer-box--border (location &optional active)
   "Return a propertized glyph for the given LOCATION.
 Face depends on the ACTIVE status."
-  
   (let ((face (if active
                   'buffer-box-face-active
                 'buffer-box-face-inactive)))
@@ -123,7 +117,6 @@ Face depends on the ACTIVE status."
 
 (defun buffer-box--overlay ()
   "Return the buffer box overlay (if any) on the current buffer."
-  
   (let ((existing nil))
     (dolist (overlay (overlays-in (point-min) (point-max)))
       (when (overlay-get overlay 'buffer-box)
@@ -138,7 +131,6 @@ Face depends on the ACTIVE status."
 
 (defun buffer-box--track-windows (&rest _args)
   "Detect newly created windows."
-  
   (let ((current-windows (window-list)))
     (dolist (window current-windows)
       (unless (memq window buffer-box--windows)
@@ -149,7 +141,6 @@ Face depends on the ACTIVE status."
 
 (defun buffer-box--selection-change (&optional frame)
   "Track which window gained or lost focus in FRAME."
-
   (let* ((frame (or frame (selected-frame)))
          (previous (gethash frame buffer-box--last-selected))
          (current (selected-window)))
@@ -166,14 +157,13 @@ Face depends on the ACTIVE status."
 
 The header line is made of a TITLE (using provided background COLOR) and
 a SUBTITLE."
-  
   (let* ((active (mode-line-window-selected-p))
-         (face-title `( :foreground ,(face-background 'default)
-                        :background ,(or color (face-foreground 'error nil 'default))
-                        :inherit bold))
-         (face-subtitle `( :foreground ,(face-foreground 'default)
-                           :background ,(face-background 'default)
-                           :inherit bold))
+         (face-title (list :foreground (face-background 'default)
+                           :background (or color (face-foreground 'error nil 'default))
+                           :inherit 'bold))
+         (face-subtitle (list :foreground (face-foreground 'default)
+                              :background (face-background 'default)
+                              :inherit 'bold))
          (face-title (if active
                          face-title
                        'buffer-box-face-inactive-i))
@@ -182,9 +172,8 @@ a SUBTITLE."
                           'buffer-box-face-inactive))
          (title (propertize (format " %s " title) 'face face-title))
          (subtitle (propertize (format " %s" subtitle) 'face face-subtitle))
-         (spacing (propertize " "
-                              'face 'default
-                              'display `(space :align-to (- scroll-bar 1)))))
+         (spacing (propertize " " 'face 'default
+                                  'display `(space :align-to (- scroll-bar 1)))))
     (list title subtitle
           spacing
           (buffer-box--border 'V active))))
@@ -194,23 +183,22 @@ a SUBTITLE."
   
   (let* ((active (mode-line-window-selected-p))
          (face-inactive 'buffer-box-face-inactive)
-         (face-active-i   `( :foreground ,(face-background 'link nil 'default)
-                             :background ,(face-foreground 'link nil 'default)
-                             :inherit bold))
-         (face-inactive-i `( :foreground ,(face-background 'shadow nil 'default)
-                             :background ,(face-foreground 'shadow nil 'default)
-                             :inherit bold))
-         (face-warning-i `( :foreground ,(face-background 'warning nil 'default)
-                            :background ,(face-foreground 'warning nil 'default)
-                            :inherit bold))
-         (face-default-i `( :foreground ,(face-background 'default nil 'default)
-                            :background ,(face-foreground 'default nil 'default)
-                            :inherit bold))
-         (face-prefix (if (not active)
-                          face-inactive-i
-                        (cond (buffer-read-only    face-default-i)
-                              ((buffer-modified-p) face-warning-i)
-                              (t                   face-active-i))))
+         (face-active-i   (list :foreground (face-background 'link nil 'default)
+                                :background (face-foreground 'link nil 'default)
+                                :inherit 'bold))
+         (face-inactive-i (list :foreground (face-background 'shadow nil 'default)
+                                :background (face-foreground 'shadow nil 'default)
+                                :inherit 'bold))
+         (face-warning-i (list :foreground (face-background 'warning nil 'default)
+                               :background (face-foreground 'warning nil 'default)
+                               :inherit 'bold))
+         (face-default-i (list :foreground (face-background 'default nil 'default)
+                               :background (face-foreground 'default nil 'default)
+                               :inherit 'bold))
+         (face-prefix (cond ((not active)         face-inactive-i)
+                             (buffer-read-only    face-default-i)
+                             ((buffer-modified-p) face-warning-i)
+                             (t                   face-active-i)))
          (prefix (propertize (cond (buffer-read-only    " RO▕")
                                    ((buffer-modified-p) " **▕")
                                    (t                   " RW▕"))
@@ -234,7 +222,6 @@ a SUBTITLE."
 
 (defun buffer-box--top-border ()
   "A regular top border string."
-  
   (let* ((active (mode-line-window-selected-p))
          (margins (window-margins))
          (width (+ (window-width)
@@ -253,7 +240,6 @@ a SUBTITLE."
 
 (defun buffer-box--bottom-border ()
   "A regular bottom border string."
-  
   (let* ((active (mode-line-window-selected-p))
          (margins (window-margins))
          (width (+ (window-width)
@@ -274,7 +260,6 @@ a SUBTITLE."
   "A regular side border for the provided BUFFER.
 
 Border style depends on the ACTIVE status."
-
   (when buffer
     (with-current-buffer buffer
       (when-let* ((border (buffer-box--border 'V active))
@@ -302,7 +287,6 @@ Border style depends on the ACTIVE status."
 
 The provided HEADER-LINE function with associated ARGS is evaluated to
 generate the actual header line."
-  
   (interactive)
   (setq-local buffer-box--data `((tab-line  . ,tab-line-format)
                                  (mode-line . ,mode-line-format)
@@ -344,7 +328,7 @@ generate the actual header line."
                         (alist-get 'left-margin buffer-box--data))
     (setq-local left-margin-width (alist-get 'left-margin buffer-box--data)
                 fringes-outside-margins
-                   (alist-get 'fringes-outside-margins  buffer-box--data)
+                (alist-get 'fringes-outside-margins  buffer-box--data)
                 right-margin-width (alist-get 'right-margin buffer-box--data)
                 tab-line-format (alist-get 'tab-line buffer-box--data)
                 header-line-format (alist-get 'header-line buffer-box--data)
@@ -359,7 +343,7 @@ An optional HEADER-LINE function (that will be called with ARGS) can be
 provided."
 
   (interactive)
-  (if-let ((overlay (buffer-box--overlay)))
+  (if (buffer-box--overlay)
       (buffer-box-off)
     (if header-line
         (buffer-box-on header-line args)
