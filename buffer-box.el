@@ -161,6 +161,14 @@ Face depends on the ACTIVE status."
 The header line is made of a TITLE (using provided background COLOR) and
 a SUBTITLE."
   (let* ((active (mode-line-window-selected-p))
+         (face-active 'buffer-box-face-active)
+         (face-inactive 'buffer-box-face-inactive)
+         (face-active-i   (list :foreground (face-background 'link nil 'default)
+                                :background (face-foreground 'link nil 'default)
+                                :inherit 'bold))
+         (face-inactive-i (list :foreground (face-background 'shadow nil 'default)
+                                :background (face-foreground 'shadow nil 'default)
+                                :inherit 'bold))
          (face-title (list :foreground (face-background 'default)
                            :background (or color (face-foreground 'error nil 'default))
                            :inherit 'bold))
@@ -169,10 +177,10 @@ a SUBTITLE."
                               :inherit 'bold))
          (face-title (if active
                          face-title
-                       'buffer-box-face-inactive-i))
+                       face-inactive-i))
          (face-subtitle (if active
                             face-subtitle
-                          'buffer-box-face-inactive))
+                          face-inactive))
          (title (propertize (format " %s " title) 'face face-title))
          (subtitle (propertize (format " %s" subtitle) 'face face-subtitle))
          (spacing (propertize " " 'face 'default
