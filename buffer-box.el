@@ -155,81 +155,67 @@ Face depends on the ACTIVE status."
         (buffer-box--side-border (window-buffer current) t))
       (puthash frame current buffer-box--last-selected))))
 
-(defun buffer-box-header-alert (title subtitle &optional color)
-  "A header line for alert buffer (e.g. messages, log, debug).
+(defun buffer-box-header (&optional prefix name mode info prefix-color)
+  "The default header line that overlaps the left border (on purpose).
 
-The header line is made of a TITLE (using provided background COLOR) and
-a SUBTITLE."
-  (let* ((active (mode-line-window-selected-p))
-         (face-active 'buffer-box-face-active)
-         (face-inactive 'buffer-box-face-inactive)
-         (face-active-i   (list :foreground (face-background 'link nil 'default)
-                                :background (face-foreground 'link nil 'default)
-                                :inherit 'bold))
-         (face-inactive-i (list :foreground (face-background 'shadow nil 'default)
-                                :background (face-foreground 'shadow nil 'default)
-                                :inherit 'bold))
-         (face-title (list :foreground (face-background 'default)
-                           :background (or color (face-foreground 'error nil 'default))
-                           :inherit 'bold))
-         (face-subtitle (list :foreground (face-foreground 'default)
-                              :background (face-background 'default)
-                              :inherit 'bold))
-         (face-title (if active
-                         face-title
-                       face-inactive-i))
-         (face-subtitle (if active
-                            face-subtitle
-                          face-inactive))
-         (title (propertize (format " %s " title) 'face face-title))
-         (subtitle (propertize (format " %s" subtitle) 'face face-subtitle))
-         (spacing (propertize " " 'face 'default
-                                  'display `(space :align-to (- scroll-bar 1)))))
-    (list title subtitle
-          spacing
-          (buffer-box--border 'V active))))
+It composed of a PREFIX, NAME and MODE on the left and INFO on the
+right.  The prefix can be colored using the provided PREFIX-COLOR (as
+background color)."
 
-(defun buffer-box-header-default ()
-  "A default header line that overlaps the left border (on purpose)."
-  
   (let* ((active (mode-line-window-selected-p))
-         (face-inactive 'buffer-box-face-inactive)
-         (face-active-i   (list :foreground (face-background 'link nil 'default)
-                                :background (face-foreground 'link nil 'default)
-                                :inherit 'bold))
-         (face-inactive-i (list :foreground (face-background 'shadow nil 'default)
-                                :background (face-foreground 'shadow nil 'default)
-                                :inherit 'bold))
-         (face-warning-i (list :foreground (face-background 'warning nil 'default)
-                               :background (face-foreground 'warning nil 'default)
-                               :inherit 'bold))
-         (face-default-i (list :foreground (face-background 'default nil 'default)
+         (prefix (or prefix (cond (buffer-read-only    " RO ")
+                                  ((buffer-modified-p) " ** ")
+                                  (t                   " RW "))))
+         (name (or name (format-mode-line " %b ")))
+         (mode (or mode (format "(%s mode)" (format-mode-line mode-name))))
+         (info (or info (format-mode-line " %c:%l ")))
+         (dedicated  (if (window-dedicated-p) "● " ""))
+         (face-read-only (list :foreground (face-background 'default nil 'default)
                                :background (face-foreground 'default nil 'default)
                                :inherit 'bold))
-         (face-prefix (cond ((not active)         face-inactive-i)
-                             (buffer-read-only    face-default-i)
-                             ((buffer-modified-p) face-warning-i)
-                             (t                   face-active-i)))
-         (prefix (propertize (cond (buffer-read-only    " RO▕")
-                                   ((buffer-modified-p) " **▕")
-                                   (t                   " RW▕"))
-                             'face face-prefix))
-         (name (propertize (format-mode-line " %24b ") 'face face-prefix))
-         (mode (propertize (format " %s mode" (format-mode-line mode-name))
-                           'face (if active
-                                     'default
-                                   face-inactive)))
+         (face-read-write (list :foreground (face-background 'link nil 'default)
+                                :background (face-foreground 'link nil 'default)
+                                :inherit 'bold))
+         (face-modified  (list :foreground (face-background 'warning nil 'default)
+                               :background (face-foreground 'warning nil 'default)
+                               :inherit 'bold))         
+         (face-inactive-i (list :foreground (face-background 'shadow nil 'default)
+                                :background (face-foreground 'shadow nil 'default)))
+         (face-active-default (list :foreground (face-foreground 'default nil 'default)
+                                    :background (face-background 'default nil 'default)))
+         (face-inactive-default (list :foreground (face-foreground 'shadow nil 'default)
+                                      :background (face-background 'shadow nil 'default)))
+         (face-active-bold (list :foreground (face-foreground 'link nil 'default)
+                                 :background (face-background 'link nil 'default)
+                                 :inherit 'bold))
+         (face-inactive-bold (list :foreground (face-foreground 'shadow nil 'default)
+                                   :background (face-background 'shadow nil 'default)
+                                   :inherit 'bold))
+         (face-active-shadow (list :foreground (face-foreground 'shadow nil 'default)
+                                   :background (face-background 'shadow nil 'default)))
+         (face-inactive-shadow (list :foreground (face-foreground 'shadow nil 'default)
+                                     :background (face-background 'shadow nil 'default)))
+         (face-prefix (cond ((not active) face-inactive-i)
+                            (prefix-color (list :foreground (face-background 'default)
+                                                :background prefix-color
+                                                :inherit 'bold))
+                            (buffer-read-only    face-read-only)
+                            ((buffer-modified-p) face-modified)
+                            (t                   face-read-write)))
+         (face-name (if active face-active-bold face-inactive-bold))
+         (face-mode (if active face-active-default face-inactive-default))
+         (face-info (if active face-active-shadow face-inactive-shadow))
+         (prefix (propertize prefix 'face face-prefix))
+         (name (propertize name 'face face-name))
+         (mode (propertize mode 'face face-mode))
+         (info (concat (propertize info 'face face-info)
+                       (propertize dedicated 'face face-info)))
          (border (buffer-box--border 'V active))
-         (coords (propertize (format-mode-line " %c:%l ")
-                             'face (if active
-                                       '(shadow default)
-                                     face-inactive)))
          (spacing (propertize " "
                               'display `(space :align-to (- scroll-bar
-                                                            ,(length coords)
-                                                            1))
+                                                            ,(1+ (length info))))
                               'face 'default)))
-    (list prefix name mode spacing coords border)))
+    (list prefix name mode spacing info border)))
 
 (defun buffer-box--top-border ()
   "A regular top border string."
@@ -307,7 +293,7 @@ generate the actual header line."
                                  (fringes-outside-margins  . ,fringes-outside-margins )
                                  (right-margin . ,right-margin-width)
                                  (left-margin . ,left-margin-width)))
-  (let ((header-line (or header-line #'buffer-box-header-default)))
+  (let ((header-line (or header-line #'buffer-box-header)))
     (unless (buffer-box--overlay)
       (let ((overlay (make-overlay (point-min) (point-max))))
         (overlay-put overlay 'buffer-box t)))
@@ -316,7 +302,7 @@ generate the actual header line."
                 left-margin-width 2
                 right-margin-width 2
                 tab-line-format '(:eval (buffer-box--top-border))
-                header-line-format `(:eval (apply #',header-line ',args))
+                header-line-format `(:eval ,(cons header-line args))                
                 mode-line-format '(:eval (buffer-box--bottom-border)))
     (buffer-box--side-border (current-buffer) t))
 
