@@ -29,13 +29,16 @@
 ;; advantage of margins, header-line, tab-line, mode-line, line-prefix
 ;; and wrap-prefix.
 
-;;;; Limitations
+;;; Limitations
 
 ;;  If you display the same buffer in two different windows, the side
 ;;  borders will be either active or inactive in both windows (while
 ;;  the tab-line, header-line and mode-line should be ok).  The reason
 ;;  is that line-prefix and wrap-prefix are attached to a buffer, not
 ;;  a window.  I don't see any way to fix it.
+
+;;  If you have fringes, make sure their width is a multiplier of the
+;;  frame char width for perfect alignment.
 
 ;;  If you have some text that has a display property spanning several
 ;;  lines, you'll see blanks on the sides.  The reason is that the
@@ -44,7 +47,7 @@
 ;;  a dynamic line-prefix / wrap-prefix inside your displayed text
 ;;  with the proper active/inactive glyph.
 
-;;;; Example usage
+;;; Example usage
 
 ;; Immediate border toggling (using default header)
 ;; (buffer-box)
@@ -92,7 +95,6 @@
   `((t ( :family     ,(face-attribute 'default :family)
          :foreground ,(face-foreground 'default nil 'default)
          :background ,(face-background 'default nil 'default)
-         
          :inherit default)))
   "Face for active buffer.")
 
@@ -212,18 +214,34 @@ background color)."
          (info (concat (propertize info 'face face-info)
                        (propertize dedicated 'face face-info)))
          (border (buffer-box--border 'V active))
-         (spacing (propertize " "
-                              'display `(space :align-to (- scroll-bar
-                                                            ,(1+ (length info))))
-                              'face 'default)))
+         (margins (window-margins))
+         (align-to (- (+ (window-width)
+                         (or (car margins) 0)
+                         (or (cdr margins) 0)
+			 1)
+                      (+ (length info)
+                         1
+                         (or (cdr margins) 0)
+                         (length border))))
+         (spacing (if (display-graphic-p)
+                      (propertize " "
+                                  'display `(space :align-to (- scroll-bar
+                                                                ,(1+ (length info))))
+                                  'face 'default)
+                  (propertize " "
+                              'display `(space :align-to (+ left ,align-to))
+                              'face 'default))))
     (list prefix name mode spacing info border)))
 
 (defun buffer-box--top-border ()
   "A regular top border string."
   (let* ((active (mode-line-window-selected-p))
          (margins (window-margins))
+	 (fringes (window-fringes))
          (width (+ (window-width)
                    -2
+		   (/ (car fringes) (frame-char-width))
+		   (/ (cadr fringes) (frame-char-width))
                    (or (car margins) 0)
                    (or (cdr margins) 0)))
          (face (if active
@@ -240,8 +258,11 @@ background color)."
   "A regular bottom border string."
   (let* ((active (mode-line-window-selected-p))
          (margins (window-margins))
+	 (fringes (window-fringes))
          (width (+ (window-width)
                    -2
+		   (/ (car fringes) (frame-char-width))
+		   (/ (cadr fringes) (frame-char-width))
                    (or (car margins) 0)
                    (or (cdr margins) 0)))
          (face (if active
