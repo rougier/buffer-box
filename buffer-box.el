@@ -216,12 +216,8 @@ background color)."
          (border (buffer-box--border 'V active))
          (margins (window-margins))
          (align-to (- (+ (window-width)
-                         (or (car margins) 0)
-                         (or (cdr margins) 0)
-			 1)
+                         (or (cdr margins) 0))
                       (+ (length info)
-                         1
-                         (or (cdr margins) 0)
                          (length border))))
          (spacing (if (display-graphic-p)
                       (propertize " "
@@ -275,6 +271,13 @@ background color)."
              " ")
      'face face)))
 
+(defun buffer-box--set-window-margins (window &rest _args)
+  "Advice on set_window-margins for when margins are changed on WINDOW."
+  (with-current-buffer (window-buffer window)
+    (when-let ((overlay (buffer-box--overlay)))
+      (force-mode-line-update)
+      (buffer-box--side-border (current-buffer) t))))
+              
 (defun buffer-box--side-border (buffer &optional active)
   "A regular side border for the provided BUFFER.
 
@@ -296,6 +299,7 @@ Border style depends on the ACTIVE status."
                   (margin-right (propertize  " "
                                  'display `((margin right-margin) ,border-right)))
                   (overlay (buffer-box--overlay)))
+        (message "margin-right: >%s<" margin-right)
         (when overlay
           (setq-local line-prefix (concat margin-right margin-left))
           (setq-local wrap-prefix (concat margin-right margin-left))
@@ -327,6 +331,9 @@ generate the actual header line."
                 header-line-format `(:eval ,(cons header-line args))                
                 mode-line-format '(:eval (buffer-box--bottom-border)))
     (buffer-box--side-border (current-buffer) t))
+
+  ;; This advice takes care of recomputing side border when margins are changes
+  (advice-add 'set-window-margins :after #'buffer-box--set-window-margins)
 
   ;; This hook is responsible for side borders that cannot be changed
   ;; from within the dynamic mode-line or header-line.
