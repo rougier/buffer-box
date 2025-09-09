@@ -299,7 +299,6 @@ Border style depends on the ACTIVE status."
                   (margin-right (propertize  " "
                                  'display `((margin right-margin) ,border-right)))
                   (overlay (buffer-box--overlay)))
-        (message "margin-right: >%s<" margin-right)
         (when overlay
           (setq-local line-prefix (concat margin-right margin-left))
           (setq-local wrap-prefix (concat margin-right margin-left))
