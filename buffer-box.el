@@ -277,19 +277,24 @@ background color)."
     (when-let ((overlay (buffer-box--overlay)))
       (force-mode-line-update)
       (buffer-box--side-border (current-buffer) t))))
-              
+
 (defun buffer-box--side-border (buffer &optional active)
   "A regular side border for the provided BUFFER.
 
 Border style depends on the ACTIVE status."
   (when buffer
     (with-current-buffer buffer
-      (when-let* ((border (buffer-box--border 'V active))
+      (when-let* ((face (if active
+                            'buffer-box-face-active
+                          'buffer-box-face-inactive))
+                  (border (buffer-box--border 'V active))
                   (window (get-buffer-window buffer t))
                   (margins (window-margins window))
-                  (margin-left (make-string (1- (or (car margins) 1)) ? ))
+                  (margin-left (propertize (make-string (1- (or (car margins) 1)) ? )
+                                           'face face))
                   (border-left (concat border margin-left))
-                  (margin-right (make-string (1- (or (cdr margins) 1)) ? ))
+                  (margin-right (propertize (make-string (1- (or (cdr margins) 1)) ? )
+                                            'face face))
                   (border-right (concat margin-right border))
                   (face (if active
                             'buffer-box-face-active
