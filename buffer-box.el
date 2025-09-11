@@ -236,8 +236,9 @@ background color)."
 	 (fringes (window-fringes))
          (width (+ (window-width)
                    -2
-		   (/ (car fringes) (frame-char-width))
-		   (/ (cadr fringes) (frame-char-width))
+                   (/ (+ (or (car fringes) 0)
+                         (or (cadr fringes) 0))
+                      (frame-char-width))
                    (or (car margins) 0)
                    (or (cdr margins) 0)))
          (face (if active
@@ -257,8 +258,9 @@ background color)."
 	 (fringes (window-fringes))
          (width (+ (window-width)
                    -2
-		   (/ (car fringes) (frame-char-width))
-		   (/ (cadr fringes) (frame-char-width))
+		   (/ (+ (or (car fringes) 0)
+                         (or (cadr fringes) 0))
+                      (frame-char-width))
                    (or (car margins) 0)
                    (or (cdr margins) 0)))
          (face (if active
@@ -275,6 +277,15 @@ background color)."
   "Advice on set_window-margins for when margins are changed on WINDOW."
   (with-current-buffer (window-buffer window)
     (when-let ((overlay (buffer-box--overlay)))
+      (set-window-buffer window (current-buffer) t)
+      (force-mode-line-update)
+      (buffer-box--side-border (current-buffer) t))))
+
+(defun buffer-box--set-window-fringes (window &rest _args)
+  "Advice on set_window-margins for when margins are changed on WINDOW."
+  (with-current-buffer (window-buffer window)
+    (when-let ((overlay (buffer-box--overlay)))
+      (set-window-buffer window (current-buffer) t)
       (force-mode-line-update)
       (buffer-box--side-border (current-buffer) t))))
 
@@ -336,8 +347,11 @@ generate the actual header line."
                 mode-line-format '(:eval (buffer-box--bottom-border)))
     (buffer-box--side-border (current-buffer) t))
 
-  ;; This advice takes care of recomputing side border when margins are changes
+  ;; This advice takes care of recomputing side border when margins are changed
   (advice-add 'set-window-margins :after #'buffer-box--set-window-margins)
+
+  ;; This advice takes care of recomputing side border when fringes are changed
+  (advice-add 'set-window-fringes :after #'buffer-box--set-window-fringes)
 
   ;; This hook is responsible for side borders that cannot be changed
   ;; from within the dynamic mode-line or header-line.
