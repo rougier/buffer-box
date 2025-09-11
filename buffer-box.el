@@ -339,6 +339,11 @@ generate the actual header line."
       (let ((overlay (make-overlay (point-min) (point-max))))
         (overlay-put overlay 'buffer-box t)))
     (set-window-margins (selected-window) 2 2)
+
+    ;; See issue #1 and #2 on GitHub
+    (set-frame-parameter nil 'right-fringe 0)
+    (set-frame-parameter nil 'left-fringe 0)
+
     (setq-local fringes-outside-margins nil
                 left-margin-width 2
                 right-margin-width 2
