@@ -37,9 +37,6 @@
 ;;  is that line-prefix and wrap-prefix are attached to a buffer, not
 ;;  a window.  I don't see any way to fix it.
 
-;;  If you have fringes, make sure their width is a multiplier of the
-;;  frame char width for perfect alignment.
-
 ;;  If you have some text that has a display property spanning several
 ;;  lines, you'll see blanks on the sides.  The reason is that the
 ;;  displayed property does not include the proper line-prefix /
@@ -180,7 +177,7 @@ background color)."
                                 :inherit 'bold))
          (face-modified  (list :foreground (face-background 'warning nil 'default)
                                :background (face-foreground 'warning nil 'default)
-                               :inherit 'bold))         
+                               :inherit 'bold))
          (face-inactive-i (list :foreground (face-background 'shadow nil 'default)
                                 :background (face-foreground 'shadow nil 'default)
                                 :inherit 'bold))
@@ -236,19 +233,20 @@ background color)."
 	 (fringes (window-fringes))
          (width (+ (window-width)
                    -2
-                   (/ (+ (or (car fringes) 0)
-                         (or (cadr fringes) 0))
-                      (frame-char-width))
+                   (ceiling (/ (+ (or (car fringes) 0)
+                                  (or (cadr fringes) 0))
+                               (float (frame-char-width))))
                    (or (car margins) 0)
                    (or (cdr margins) 0)))
          (face (if active
                    'buffer-box-face-active
                  'buffer-box-face-inactive)))
+    ;; The two extra space at the end is for a possible scroll-bar
     (propertize
      (concat (buffer-box--border 'TL active)
              (make-string width (aref (buffer-box--border 'H active) 0))
              (buffer-box--border 'TR active)
-             " ")
+             "  ")
      'face face)))
 
 (defun buffer-box--bottom-border ()
@@ -258,23 +256,24 @@ background color)."
 	 (fringes (window-fringes))
          (width (+ (window-width)
                    -2
-		   (/ (+ (or (car fringes) 0)
-                         (or (cadr fringes) 0))
-                      (frame-char-width))
+		   (ceiling (/ (+ (or (car fringes) 0)
+                                  (or (cadr fringes) 0))
+                               (float (frame-char-width))))
                    (or (car margins) 0)
                    (or (cdr margins) 0)))
          (face (if active
                    'buffer-box-face-active
                  'buffer-box-face-inactive)))
+    ;; The two extra space at the end is for a possible scroll-bar
     (propertize
      (concat (buffer-box--border 'BL active)
              (make-string width (aref (buffer-box--border 'H active) 0))
              (buffer-box--border 'BR active)
-             " ")
+             "  ")
      'face face)))
 
 (defun buffer-box--set-window-margins (window &rest _args)
-  "Advice on set_window-margins for when margins are changed on WINDOW."
+  "Advice on 'set_window-margins' for when margins are changed on WINDOW."
   (with-current-buffer (window-buffer window)
     (when-let ((overlay (buffer-box--overlay)))
       (set-window-buffer window (current-buffer) t)
@@ -282,7 +281,7 @@ background color)."
       (buffer-box--side-border (current-buffer) t))))
 
 (defun buffer-box--set-window-fringes (window &rest _args)
-  "Advice on set_window-margins for when margins are changed on WINDOW."
+  "Advice on 'set_window-fringes' for when margins are changed on WINDOW."
   (with-current-buffer (window-buffer window)
     (when-let ((overlay (buffer-box--overlay)))
       (set-window-buffer window (current-buffer) t)
@@ -334,6 +333,8 @@ generate the actual header line."
                                  (fringes-outside-margins  . ,fringes-outside-margins )
                                  (right-margin . ,right-margin-width)
                                  (left-margin . ,left-margin-width)))
+
+
   (let ((header-line (or header-line #'buffer-box-header)))
     (unless (buffer-box--overlay)
       (let ((overlay (make-overlay (point-min) (point-max))))
@@ -341,14 +342,37 @@ generate the actual header line."
     (set-window-margins (selected-window) 2 2)
 
     ;; See issue #1 and #2 on GitHub
-    (set-frame-parameter nil 'right-fringe 0)
-    (set-frame-parameter nil 'left-fringe 0)
+    ;; Solution:
+    ;;   1. save all window fringes
+    ;;   2. set default value for fringes
+    ;;   2. set frame fringes to (0 . 0)
+    ;;   3. restore window fringes
+    (let ((fringes
+           (mapcar (lambda (window)
+                     (let ((fringes (window-fringes window)))
+                       (list window (car fringes) (cadr fringes))))
+                   (window-list nil 'no-minibuffer))))
+      ;; We set default value base on existing ones or frame defaults
+      (setq-default left-fringe-width (or (default-value 'left-fringe-width)
+                                          (frame-parameter nil 'left-fringe))
+                    right-fringe-width (or (default-value 'right-fringe-width)
+                                           (frame-parameter nil 'right-fringe)))
+      ;; No frame fringes (this frame an new frames)
+      (set-frame-parameter nil 'right-fringe 0)
+      (set-frame-parameter nil 'left-fringe 0)
+      (add-to-list 'default-frame-alist '(left-fringe . 0))
+      (add-to-list 'default-frame-alist '(right-fringe . 0))
+
+      ;; Restore fringes
+      (dolist (args fringes)
+        (when (window-live-p (car args))
+          (apply #'set-window-fringes args))))
 
     (setq-local fringes-outside-margins nil
                 left-margin-width 2
                 right-margin-width 2
                 tab-line-format '(:eval (buffer-box--top-border))
-                header-line-format `(:eval ,(cons header-line args))                
+                header-line-format `(:eval ,(cons header-line args))
                 mode-line-format '(:eval (buffer-box--bottom-border)))
     (buffer-box--side-border (current-buffer) t))
 
