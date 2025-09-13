@@ -1,6 +1,7 @@
 ;;; buffer-box.el --- Borders around buffers     -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2025  Nicolas P. Rougier (inria)
+;; Copyright (C) 2025 Free Software Foundation, Inc.
+
 ;; URL: https://github.com/rougier/buffer-box
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "29.1"))
