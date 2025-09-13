@@ -43,6 +43,16 @@
 ;;  wrap-prefix from the main buffer.  One way to fix it is to include
 ;;  a dynamic line-prefix / wrap-prefix inside your displayed text
 ;;  with the proper active/inactive glyph.
+;;
+;;  On graphics display, it is necessary to nullify frame fringes
+;;  because they interfere with alignement.  Consequently, when a
+;;  buffer-box activated for the first time on a frame, this results
+;;  in a small frame-resize (width only).
+;;
+;;  On graphics display, the presence of a scroll-bar when there are
+;;  multiple windows can induce mis-alignment.  There is no easy
+;;  solution but to make sure the width of the scroll-bar is a
+;;  multiplier of 'frame-char-width'. 
 
 ;;; Example usage
 
